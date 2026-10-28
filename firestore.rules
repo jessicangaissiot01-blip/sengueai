@@ -1,0 +1,35 @@
+rules_version = '2';
+
+// Règles de sécurité de la base Firestore.
+// Par défaut tout est interdit. On autorise seulement :
+//  - chaque utilisateur à lire et modifier son propre profil ;
+//  - tout le monde à lire les boutiques et les produits ;
+//  - seul le propriétaire à créer, modifier ou supprimer sa boutique et ses produits.
+// Déploiement : firebase deploy --only firestore:rules
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // Le document de la boutique a le même identifiant que son propriétaire.
+    match /shops/{uid} {
+      allow read: if true;
+      allow write: if isOwner(uid);
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if isOwner(request.resource.data.ownerId)
+                    && request.resource.data.price is int
+                    && request.resource.data.price > 0;
+      allow update, delete: if isOwner(resource.data.ownerId);
+    }
+  }
+}
