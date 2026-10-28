@@ -122,7 +122,13 @@ async function callModel({ apiKey, model, body, timeLeft }) {
     .map((part) => part.text ?? '')
     .join('');
   if (!text) {
-    throw new GeminiError(`Réponse vide du modèle ${model}`);
+    /*
+     * Parfois le modèle renvoie une réponse vide, sans erreur. C'est passager :
+     * on le traite comme une surcharge (503) pour essayer le modèle de secours.
+     * finishReason indique pourquoi le modèle s'est arrêté (utile dans les journaux).
+     */
+    const reason = result.candidates?.[0]?.finishReason ?? 'inconnue';
+    throw new GeminiError(`Réponse vide du modèle ${model} (raison : ${reason})`, 503);
   }
   return text;
 }

@@ -176,3 +176,23 @@ test('askGemini passe au modèle de secours si le premier est surchargé', async
     globalThis.fetch = realFetch;
   }
 });
+
+test('askGemini passe au modèle de secours si le premier renvoie une réponse vide', async () => {
+  const calledModels = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const model = url.split('/models/')[1].split(':')[0];
+    calledModels.push(model);
+    if (model === 'principal') {
+      return Response.json({ candidates: [{ content: { parts: [] }, finishReason: 'OTHER' }] });
+    }
+    return Response.json({ candidates: [{ content: { parts: [{ text: 'Bonjour !' }] } }] });
+  };
+  try {
+    const text = await askGemini({ apiKey: 'test', models: ['principal', 'secours'], parts: [{ text: 'Salut' }] });
+    assert.equal(text, 'Bonjour !');
+    assert.deepEqual(calledModels, ['principal', 'secours']);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
