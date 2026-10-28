@@ -1,0 +1,36 @@
+name: sengue_ai
+description: SengueAI, une application qui aide les commerçants à créer et gérer leur boutique en ligne avec la voix et l'IA.
+publish_to: 'none'
+version: 2.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase : connexion des utilisateurs et base de données
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.4
+
+  # Appels à notre API (qui elle-même appelle Gemini)
+  http: ^1.2.0
+
+  # Photo des produits
+  image_picker: ^1.1.2
+
+  # Voix : reconnaissance vocale et synthèse vocale
+  speech_to_text: ^7.0.0
+  flutter_tts: ^4.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
