@@ -1,0 +1,14 @@
+# Configuration Netlify
+# - publish : dossier du site web compilé par Flutter (flutter build web)
+# - functions : dossier de l'API
+
+[build]
+  publish = "build/web"
+  functions = "netlify/functions"
+
+# Application Flutter sur une seule page : toutes les adresses renvoient index.html.
+# Les fonctions (/api/ai) passent avant cette règle.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

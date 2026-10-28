@@ -1,0 +1,12 @@
+{
+  "name": "sengueai-api",
+  "private": true,
+  "description": "API de SengueAI (fonction Netlify) qui appelle Google Gemini",
+  "type": "module",
+  "scripts": {
+    "test": "node --test netlify/tests/api.test.mjs"
+  },
+  "dependencies": {
+    "jose": "^5.9.6"
+  }
+}
