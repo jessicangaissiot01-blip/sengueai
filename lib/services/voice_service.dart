@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
@@ -51,7 +52,14 @@ class VoiceService {
 
   Future<void> speak(String text, String language) async {
     await _tts.setLanguage(language == 'en' ? 'en-US' : 'fr-FR');
-    await _tts.setSpeechRate(0.5);
+    /*
+     * La vitesse "normale" n'a pas la même valeur partout :
+     *  - dans le navigateur (web), 1.0 est la vitesse normale ;
+     *  - sur Android, flutter_tts considère 0.5 comme la vitesse normale.
+     * Avant, on mettait 0.5 partout : sur le web, la voix parlait deux fois
+     * trop lentement.
+     */
+    await _tts.setSpeechRate(kIsWeb ? 1.0 : 0.5);
     await _tts.speak(text);
   }
 
