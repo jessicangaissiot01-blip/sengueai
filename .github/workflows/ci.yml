@@ -1,0 +1,85 @@
+# Intégration et déploiement continus (CI/CD) avec GitHub Actions.
+#
+# À chaque push ou pull request :
+#   1. tests de l'API (Node.js)
+#   2. analyse, tests et compilation web de l'application (Flutter)
+# Sur la branche main, si tout est vert :
+#   3. déploiement du site et de l'API sur Netlify
+#
+# Secrets à créer dans GitHub (Settings > Secrets and variables > Actions) :
+#   FIREBASE_OPTIONS_DART : le fichier lib/firebase_options.dart encodé en base64
+#   NETLIFY_AUTH_TOKEN    : jeton personnel Netlify
+#   NETLIFY_SITE_ID       : identifiant du site Netlify
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  api:
+    name: Tests de l'API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm test
+
+  app:
+    name: Application Flutter
+    runs-on: ubuntu-latest
+    env:
+      FIREBASE_OPTIONS_DART: ${{ secrets.FIREBASE_OPTIONS_DART }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      # Le vrai fichier Firebase n'est pas sur GitHub : on le recrée depuis le secret.
+      # Sans secret, on utilise un faux fichier, suffisant pour l'analyse et les tests.
+      - name: Fichier de configuration Firebase
+        run: |
+          if [ -n "$FIREBASE_OPTIONS_DART" ]; then
+            echo "$FIREBASE_OPTIONS_DART" | base64 --decode > lib/firebase_options.dart
+          else
+            cp ci/firebase_options_stub.dart lib/firebase_options.dart
+          fi
+
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test
+      - run: flutter build web --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site-web
+          path: build/web
+
+  deploy:
+    name: Déploiement sur Netlify
+    needs: [api, app]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: site-web
+          path: build/web
+      - name: Publier le site et l'API
+        if: env.NETLIFY_AUTH_TOKEN != ''
+        run: npx --yes netlify-cli@17 deploy --prod --dir=build/web --functions=netlify/functions
