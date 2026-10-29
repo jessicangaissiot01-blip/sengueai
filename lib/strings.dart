@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 /*
  * Textes de l'application en français et en anglais.
@@ -18,8 +18,24 @@ String tr(String key) {
   return texts[key] ?? _french[key] ?? key;
 }
 
+/*
+ * Change de langue et redessine TOUS les écrans ouverts.
+ *
+ * Avant, seul MaterialApp se redessinait. Mais les écrans créés avec
+ * "const" ou déjà ouverts par-dessus (Navigator.push) ne se redessinaient
+ * pas : il fallait réactualiser la page pour voir la nouvelle langue.
+ * Ici, on parcourt tous les éléments de l'application et on demande à
+ * chacun de se redessiner.
+ */
 void toggleLanguage() {
   appLanguage.value = appLanguage.value == 'fr' ? 'en' : 'fr';
+
+  void redraw(Element element) {
+    element.markNeedsBuild();
+    element.visitChildren(redraw);
+  }
+
+  WidgetsBinding.instance.rootElement?.visitChildren(redraw);
 }
 
 const Map<String, String> _french = {
@@ -38,13 +54,31 @@ const Map<String, String> _french = {
 
   // Création de la boutique
   'createShopTitle': 'Crée ta boutique',
-  'voiceIntro': 'Appuie sur le micro et présente ta boutique. Par exemple : '
-      '"Je vends des robes en wax au marché Katako à Niamey, ma boutique s\'appelle Aliya Shop."',
+  'stepWhat': 'Que vends-tu ?',
+  'stepWhatHelp': 'Dis-le avec ta voix, écris-le, ou prends juste une photo d\'un de tes articles : '
+      'Sengue va deviner.',
+  'stepName': 'Comment s\'appelle ta boutique ?',
+  'stepPlace': 'Où se trouve ta boutique ?',
+  'stepPlaceHelp': 'Ta ville ou ton quartier, et ton pays.',
+  'stepForm': 'Vérifie ta boutique',
+  'isItCorrect': 'C\'est bien ça ?',
+  'yes': 'Oui',
+  'no': 'Non',
+  'sayAgain': 'D\'accord, redis-le moi ou écris-le.',
+  'youSell': 'Tu vends :',
+  'iSee': 'Je vois :',
+  'shopCalled': 'Ta boutique s\'appelle :',
+  'shopLocated': 'Ta boutique se trouve à :',
+  'orType': 'ou écris ta réponse ici',
+  'confirm': 'Valider',
+  'justTakePhoto': 'Ou prends juste une photo',
+  'chooseCategory': 'Choisis ce que tu vends :',
+  'fillFormInstead': 'Je préfère remplir le formulaire',
+  'useVoiceInstead': 'Revenir aux questions de Sengue',
   'listening': 'Je t\'écoute...',
   'tapToSpeak': 'Appuie pour parler',
   'tapToStop': 'Appuie pour arrêter',
   'analyzing': 'Sengue analyse...',
-  'understood': 'Sengue a compris :',
   'micUnavailable': 'Le micro n\'est pas disponible. Remplis le formulaire.',
   'shopName': 'Nom de la boutique',
   'category': 'Catégorie',
@@ -53,6 +87,11 @@ const Map<String, String> _french = {
   'description': 'Description',
   'createShop': 'Créer ma boutique',
   'shopNameRequired': 'Donne un nom à ta boutique.',
+
+  'manageShop': 'Gérer ma boutique',
+  'yourShop': 'Ta boutique',
+  'shopProducts': 'Produits',
+  'shopNoProducts': 'Cette boutique n\'a pas encore de produit.',
 
   // Boutique
   'products': 'Mes produits',
@@ -69,7 +108,9 @@ const Map<String, String> _french = {
 
   // Ajout de produit
   'takePhoto': 'Prendre une photo',
-  'gallery': 'Galerie',
+  'gallery': 'Choisir dans la galerie',
+  'choosePhoto': 'Choisir une photo',
+  'takeOrChoosePhoto': 'Prendre ou choisir une photo',
   'photoHint': 'Prends ton produit en photo : Sengue trouve son nom et sa catégorie.',
   'recognized': 'Sengue a reconnu',
   'confidence': 'confiance',
@@ -104,6 +145,57 @@ const Map<String, String> _french = {
   'comingSoon': 'Bientôt disponible',
   'comingSoonMessage': 'Le paiement par Mobile Money arrive bientôt.',
 
+  // Marketplace, commandes et profil
+  'home': 'Accueil',
+  'favorites': 'Favoris',
+  'sell': 'Vendre',
+  'orders': 'Commandes',
+  'profile': 'Profil',
+  'hello': 'Bonjour',
+  'whatAreYouLookingFor': 'Que recherches-tu aujourd\'hui ?',
+  'searchProducts': 'Chercher un produit, une catégorie, une ville...',
+  'bannerTitle': 'Vends en parlant à Sengue',
+  'bannerText': 'Crée ta boutique en quelques secondes, Sengue reconnaît tes produits en photo.',
+  'startSelling': 'Commencer à vendre',
+  'all': 'Toutes',
+  'discoverShops': 'Boutiques à découvrir',
+  'recentProducts': 'Produits récents',
+  'results': 'Résultats',
+  'noResults': 'Aucun produit ne correspond.',
+  'noProductsYet': 'Aucun produit pour le moment.',
+  'noFavorites': 'Tu n\'as pas encore de favoris. Appuie sur le cœur d\'un produit pour le garder ici.',
+  'inStock': 'En stock',
+  'order': 'Commander',
+  'orderTitle': 'Commander ce produit',
+  'quantity': 'Quantité',
+  'total': 'Total',
+  'yourPhone': 'Ton numéro de téléphone',
+  'orderNote': 'Message au vendeur (facultatif)',
+  'confirmOrder': 'Valider la commande',
+  'phoneRequired': 'Indique ton numéro pour que le vendeur te contacte.',
+  'orderSent': 'Commande envoyée. Le vendeur va te contacter.',
+  'ownProduct': 'C\'est un de tes produits.',
+  'myPurchases': 'Mes achats',
+  'receivedOrders': 'Commandes reçues',
+  'noShopForOrders': 'Crée ta boutique pour recevoir des commandes.',
+  'noSales': 'Aucune commande reçue pour le moment.',
+  'noPurchases': 'Tu n\'as encore rien commandé.',
+  'buyer': 'Acheteur',
+  'phone': 'Téléphone',
+  'shop': 'Boutique',
+  'message': 'Message',
+  'status_pending': 'En attente',
+  'status_accepted': 'Acceptée',
+  'status_delivered': 'Livrée',
+  'status_refused': 'Refusée',
+  'accept': 'Accepter',
+  'refuse': 'Refuser',
+  'markDelivered': 'Marquer livrée',
+  'copyPhone': 'Copier le numéro',
+  'phoneCopied': 'Numéro copié.',
+  'language': 'Langue',
+  'noName': 'Sans nom',
+
   // Erreurs générales
   'errorNetwork': 'Pas de connexion internet.',
   'errorAi': 'Sengue n\'est pas disponible pour le moment. Réessaie.',
@@ -124,13 +216,30 @@ const Map<String, String> _english = {
   'fillAll': 'Please fill in all fields.',
 
   'createShopTitle': 'Create your shop',
-  'voiceIntro': 'Tap the microphone and describe your shop. For example: '
-      '"I sell wax dresses at Katako market in Niamey, my shop is called Aliya Shop."',
+  'stepWhat': 'What do you sell?',
+  'stepWhatHelp': 'Say it, type it, or just take a photo of one of your items: Sengue will guess.',
+  'stepName': 'What is your shop called?',
+  'stepPlace': 'Where is your shop?',
+  'stepPlaceHelp': 'Your city or area, and your country.',
+  'stepForm': 'Check your shop',
+  'isItCorrect': 'Is that right?',
+  'yes': 'Yes',
+  'no': 'No',
+  'sayAgain': 'All right, say it again or type it.',
+  'youSell': 'You sell:',
+  'iSee': 'I see:',
+  'shopCalled': 'Your shop is called:',
+  'shopLocated': 'Your shop is in:',
+  'orType': 'or type your answer here',
+  'confirm': 'Confirm',
+  'justTakePhoto': 'Or just take a photo',
+  'chooseCategory': 'Choose what you sell:',
+  'fillFormInstead': 'I prefer to fill in the form',
+  'useVoiceInstead': 'Back to Sengue\'s questions',
   'listening': 'I am listening...',
   'tapToSpeak': 'Tap to speak',
   'tapToStop': 'Tap to stop',
   'analyzing': 'Sengue is analysing...',
-  'understood': 'Sengue understood:',
   'micUnavailable': 'The microphone is not available. Please use the form.',
   'shopName': 'Shop name',
   'category': 'Category',
@@ -139,6 +248,11 @@ const Map<String, String> _english = {
   'description': 'Description',
   'createShop': 'Create my shop',
   'shopNameRequired': 'Give your shop a name.',
+
+  'manageShop': 'Manage my shop',
+  'yourShop': 'Your shop',
+  'shopProducts': 'Products',
+  'shopNoProducts': 'This shop has no products yet.',
 
   'products': 'My products',
   'noProducts': 'No products yet. Add your first product.',
@@ -153,7 +267,9 @@ const Map<String, String> _english = {
   'logout': 'Log out',
 
   'takePhoto': 'Take a photo',
-  'gallery': 'Gallery',
+  'gallery': 'Choose from gallery',
+  'choosePhoto': 'Choose a photo',
+  'takeOrChoosePhoto': 'Take or choose a photo',
   'photoHint': 'Take a photo of your product: Sengue finds its name and category.',
   'recognized': 'Sengue recognised',
   'confidence': 'confidence',
@@ -185,6 +301,56 @@ const Map<String, String> _english = {
   'proPrice': '4,999 FCFA per month',
   'comingSoon': 'Coming soon',
   'comingSoonMessage': 'Mobile Money payment is coming soon.',
+
+  'home': 'Home',
+  'favorites': 'Favourites',
+  'sell': 'Sell',
+  'orders': 'Orders',
+  'profile': 'Profile',
+  'hello': 'Hello',
+  'whatAreYouLookingFor': 'What are you looking for today?',
+  'searchProducts': 'Search a product, a category, a city...',
+  'bannerTitle': 'Sell by talking to Sengue',
+  'bannerText': 'Create your shop in seconds, Sengue recognises your products from a photo.',
+  'startSelling': 'Start selling',
+  'all': 'All',
+  'discoverShops': 'Shops to discover',
+  'recentProducts': 'Recent products',
+  'results': 'Results',
+  'noResults': 'No product matches.',
+  'noProductsYet': 'No products yet.',
+  'noFavorites': 'No favourites yet. Tap the heart on a product to keep it here.',
+  'inStock': 'In stock',
+  'order': 'Order',
+  'orderTitle': 'Order this product',
+  'quantity': 'Quantity',
+  'total': 'Total',
+  'yourPhone': 'Your phone number',
+  'orderNote': 'Message to the seller (optional)',
+  'confirmOrder': 'Confirm order',
+  'phoneRequired': 'Enter your number so the seller can contact you.',
+  'orderSent': 'Order sent. The seller will contact you.',
+  'ownProduct': 'This is one of your products.',
+  'myPurchases': 'My purchases',
+  'receivedOrders': 'Received orders',
+  'noShopForOrders': 'Create your shop to receive orders.',
+  'noSales': 'No orders received yet.',
+  'noPurchases': 'You have not ordered anything yet.',
+  'buyer': 'Buyer',
+  'phone': 'Phone',
+  'shop': 'Shop',
+  'message': 'Message',
+  'status_pending': 'Pending',
+  'status_accepted': 'Accepted',
+  'status_delivered': 'Delivered',
+  'status_refused': 'Refused',
+  'accept': 'Accept',
+  'refuse': 'Refuse',
+  'markDelivered': 'Mark delivered',
+  'copyPhone': 'Copy number',
+  'phoneCopied': 'Number copied.',
+  'language': 'Language',
+  'noName': 'No name',
 
   'errorNetwork': 'No internet connection.',
   'errorAi': 'Sengue is not available right now. Please try again.',

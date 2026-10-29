@@ -24,7 +24,7 @@ class Product {
   final String imageBase64;
   final DateTime? createdAt;
 
-  const Product({
+  Product({
     this.id = '',
     required this.shopId,
     required this.name,
@@ -42,8 +42,15 @@ class Product {
   bool get isOutOfStock => stock <= 0;
   bool get isLowStock => stock > 0 && stock <= 3;
 
-  // Convertit le texte base64 en octets pour pouvoir afficher l'image.
-  Uint8List? get imageBytes {
+  /*
+   * La photo en octets, pour l'afficher avec Image.memory.
+   * "late final" : le décodage du base64 est fait une seule fois, la première
+   * fois qu'on en a besoin, puis gardé. Sans cela, la photo serait décodée
+   * à chaque rafraîchissement de l'écran, ce qui ralentit les grandes listes.
+   */
+  late final Uint8List? imageBytes = _decodeImage();
+
+  Uint8List? _decodeImage() {
     if (imageBase64.isEmpty) return null;
     try {
       return base64Decode(imageBase64);

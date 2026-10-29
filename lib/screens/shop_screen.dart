@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../data/categories.dart';
 import '../models/product.dart';
 import '../models/shop.dart';
-import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../strings.dart';
 import '../theme.dart';
@@ -12,7 +11,9 @@ import 'assistant_screen.dart';
 import 'pro_screen.dart';
 
 /*
- * Écran principal du commerçant : sa boutique et la liste de ses produits.
+ * Gestion de sa propre boutique : la liste de ses produits, l'ajout de
+ * produits, le stock et l'assistante Sengue.
+ * On arrive ici depuis l'accueil (bouton "Gérer ma boutique").
  *
  * La liste vient d'un Stream Firestore : quand on ajoute, modifie ou
  * supprime un produit, la liste se met à jour toute seule.
@@ -65,14 +66,7 @@ class _ShopScreenState extends State<ShopScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(shop.name),
-        actions: [
-          const LanguageButton(),
-          IconButton(
-            tooltip: tr('logout'),
-            icon: const Icon(Icons.logout),
-            onPressed: () => AuthService().logout(),
-          ),
-        ],
+        actions: const [LanguageButton()],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _open(AddProductScreen(shop: shop)),
@@ -180,7 +174,7 @@ class _ShopScreenState extends State<ShopScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  Text('${product.price} FCFA'),
+                  Text(formatPrice(product.price)),
                   Text(stockText, style: TextStyle(color: stockColor)),
                 ],
               ),

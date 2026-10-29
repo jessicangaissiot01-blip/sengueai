@@ -1,9 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sengue_ai/data/categories.dart';
 import 'package:sengue_ai/models/ai_results.dart';
+import 'package:sengue_ai/models/order.dart';
 import 'package:sengue_ai/models/product.dart';
 import 'package:sengue_ai/models/shop.dart';
 import 'package:sengue_ai/strings.dart';
+import 'package:sengue_ai/theme.dart';
 
 /*
  * Tests des modèles et des petites fonctions qui ne dépendent pas de Firebase.
@@ -62,5 +64,17 @@ void main() {
   test('Product.imageBytes renvoie null si la photo est absente ou abîmée', () {
     final product = Product.fromMap('p1', {'imageBase64': 'pas du base64 !'});
     expect(product.imageBytes, isNull);
+  });
+
+  test('formatPrice sépare les milliers', () {
+    expect(formatPrice(500), '500 FCFA');
+    expect(formatPrice(25000), '25 000 FCFA');
+    expect(formatPrice(1250000), '1 250 000 FCFA');
+  });
+
+  test('ShopOrder calcule le total et refuse un statut inconnu', () {
+    final order = ShopOrder.fromMap('o1', {'price': 2500, 'quantity': 3, 'status': 'volée'});
+    expect(order.total, 7500);
+    expect(order.status, 'pending');
   });
 }

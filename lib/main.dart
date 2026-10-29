@@ -3,12 +3,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import 'firebase_options.dart';
-import 'models/shop.dart';
-import 'screens/create_shop_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/shop_screen.dart';
+import 'screens/main_screen.dart';
 import 'services/auth_service.dart';
-import 'services/database_service.dart';
 import 'strings.dart';
 import 'theme.dart';
 
@@ -35,17 +32,6 @@ class SengueApp extends StatelessWidget {
           title: 'SengueAI',
           debugShowCheckedModeBanner: false,
           theme: buildTheme(),
-          // Sur ordinateur, l'application garde la largeur d'un téléphone ou
-          // d'une tablette, centrée sur un fond gris, au lieu de s'étirer.
-          builder: (context, child) => ColoredBox(
-            color: AppColors.desktopBackground,
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: child,
-              ),
-            ),
-          ),
           home: const AuthGate(),
         );
       },
@@ -56,7 +42,7 @@ class SengueApp extends StatelessWidget {
 /*
  * Choisit le premier écran selon l'état de connexion :
  *  - pas connecté            -> écran de connexion
- *  - connecté                -> ShopGate
+ *  - connecté                -> écran principal (marketplace et onglets)
  *
  * On n'utilise pas Navigator pour passer d'un état à l'autre : le
  * StreamBuilder écoute Firebase et change l'écran tout seul quand
@@ -83,42 +69,7 @@ class _AuthGateState extends State<AuthGate> {
         }
         final user = snapshot.data;
         if (user == null) return const LoginScreen();
-        return ShopGate(user: user);
-      },
-    );
-  }
-}
-
-/*
- * Pour un utilisateur connecté :
- *  - pas encore de boutique  -> écran de création de boutique
- *  - boutique existante      -> écran de la boutique
- */
-class ShopGate extends StatefulWidget {
-  final User user;
-  const ShopGate({super.key, required this.user});
-
-  @override
-  State<ShopGate> createState() => _ShopGateState();
-}
-
-class _ShopGateState extends State<ShopGate> {
-  late final Stream<Shop?> _shopStream = DatabaseService().watchShop(widget.user.uid);
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<Shop?>(
-      stream: _shopStream,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Scaffold(body: Center(child: Text(tr('errorUnknown'))));
-        }
-        if (!snapshot.hasData && snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
-        final shop = snapshot.data;
-        if (shop == null) return CreateShopScreen(user: widget.user);
-        return ShopScreen(shop: shop);
+        return MainScreen(user: user);
       },
     );
   }

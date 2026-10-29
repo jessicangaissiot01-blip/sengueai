@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../models/order.dart';
 import '../models/product.dart';
 import '../models/shop.dart';
 
@@ -7,9 +8,12 @@ import '../models/shop.dart';
  * Lecture et écriture dans la base de données Cloud Firestore.
  *
  * Collections utilisées :
- *  - shops    : une boutique par utilisateur (identifiant = uid)
+ *  - shops    : une boutique par utilisateur (identifiant = uid),
+ *               visibles par tous sur la marketplace
  *  - products : les produits, avec un champ shopId pour savoir à quelle
  *               boutique ils appartiennent
+ *  - orders   : les commandes (acheteur, vendeur, produit, quantité, statut)
+ *  - users    : le profil de chaque utilisateur, avec ses produits favoris
  *
  * Les méthodes "watch" renvoient un Stream : l'écran est mis à jour
  * automatiquement à chaque changement dans la base, sans recharger.
@@ -19,6 +23,8 @@ class DatabaseService {
 
   CollectionReference<Map<String, dynamic>> get _shops => _db.collection('shops');
   CollectionReference<Map<String, dynamic>> get _products => _db.collection('products');
+  CollectionReference<Map<String, dynamic>> get _orders => _db.collection('orders');
+  CollectionReference<Map<String, dynamic>> get _users => _db.collection('users');
 
   // Renvoie null tant que l'utilisateur n'a pas créé sa boutique.
   Stream<Shop?> watchShop(String uid) {
@@ -26,6 +32,19 @@ class DatabaseService {
       if (!doc.exists) return null;
       return Shop.fromMap(doc.id, doc.data()!);
     });
+  }
+
+  /*
+   * Toutes les boutiques de la marketplace, des plus récentes aux plus anciennes.
+   * On en charge au plus 100 : assez pour une démonstration, et la lecture
+   * reste rapide. Les règles Firestore autorisent tout le monde à lire les boutiques.
+   */
+  Stream<List<Shop>> watchAllShops() {
+    return _shops
+        .orderBy('createdAt', descending: true)
+        .limit(100)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => Shop.fromMap(doc.id, doc.data())).toList());
   }
 
   Future<void> createShop(Shop shop) {
@@ -59,5 +78,88 @@ class DatabaseService {
 
   Future<void> deleteProduct(String productId) {
     return _products.doc(productId).delete();
+  }
+
+  /*
+   * Produits de toutes les boutiques, pour l'accueil de la marketplace.
+   * On en charge au plus 60, les plus récents. Chaque produit contient sa
+   * photo, donc on évite de tout charger d'un coup.
+   */
+  Stream<List<Product>> watchAllProducts() {
+    return _products
+        .orderBy('createdAt', descending: true)
+        .limit(60)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => Product.fromMap(doc.id, doc.data())).toList());
+  }
+
+  /*
+   * Favoris : la liste des identifiants des produits aimés, gardée dans le
+   * document de l'utilisateur (users/{uid}, champ favorites).
+   */
+  Stream<Set<String>> watchFavorites(String uid) {
+    return _users.doc(uid).snapshots().map((doc) {
+      final list = doc.data()?['favorites'] as List<dynamic>? ?? [];
+      return list.whereType<String>().toSet();
+    });
+  }
+
+  /*
+   * Ajoute ou retire un produit des favoris.
+   * arrayUnion et arrayRemove modifient la liste directement dans Firestore,
+   * sans avoir à la relire avant.
+   */
+  Future<void> setFavorite(String uid, String productId, bool favorite) {
+    return _users.doc(uid).set({
+      'favorites': favorite
+          ? FieldValue.arrayUnion([productId])
+          : FieldValue.arrayRemove([productId]),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> createOrder(ShopOrder order) {
+    return _orders.add(order.toMap());
+  }
+
+  /*
+   * Commandes passées par l'utilisateur (ses achats) ou reçues par sa
+   * boutique (ses ventes). Le tri par date est fait dans l'application,
+   * pour ne pas avoir à créer d'index dans Firestore.
+   */
+  Stream<List<ShopOrder>> watchPurchases(String uid) => _watchOrders('buyerId', uid);
+
+  Stream<List<ShopOrder>> watchSales(String uid) => _watchOrders('sellerId', uid);
+
+  Stream<List<ShopOrder>> _watchOrders(String field, String uid) {
+    return _orders.where(field, isEqualTo: uid).snapshots().map((snapshot) {
+      final orders = snapshot.docs.map((doc) => ShopOrder.fromMap(doc.id, doc.data())).toList();
+      orders.sort((a, b) {
+        final dateA = a.createdAt ?? DateTime.now();
+        final dateB = b.createdAt ?? DateTime.now();
+        return dateB.compareTo(dateA);
+      });
+      return orders;
+    });
+  }
+
+  /*
+   * Le vendeur change le statut d'une commande.
+   * Quand elle est livrée, on retire la quantité vendue du stock.
+   * Le batch envoie les deux changements ensemble : soit les deux
+   * réussissent, soit aucun.
+   */
+  Future<void> updateOrderStatus(ShopOrder order, String status) async {
+    final batch = _db.batch();
+    batch.update(_orders.doc(order.id), {'status': status});
+
+    if (status == 'delivered') {
+      final productDoc = await _products.doc(order.productId).get();
+      if (productDoc.exists) {
+        final stock = (productDoc.data()?['stock'] as num?)?.toInt() ?? 0;
+        final newStock = stock - order.quantity;
+        batch.update(_products.doc(order.productId), {'stock': newStock < 0 ? 0 : newStock});
+      }
+    }
+    await batch.commit();
   }
 }

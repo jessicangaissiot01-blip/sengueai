@@ -11,7 +11,6 @@ class AppColors {
   static const Color navy = Color(0xFF0B2B33);
   static const Color gold = Color(0xFFFFC93C);
   static const Color background = Color(0xFFF6F7F9);
-  static const Color desktopBackground = Color(0xFFDDE3E0);
 }
 
 ThemeData buildTheme() {
@@ -72,4 +71,42 @@ class LanguageButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/*
+ * Sur ordinateur, l'application prend tout l'écran. Mais un formulaire
+ * étiré sur toute la largeur est difficile à lire : on le garde centré,
+ * avec une largeur maximale. Sur téléphone, cela ne change rien.
+ */
+class CenteredContent extends StatelessWidget {
+  final Widget child;
+  final double maxWidth;
+
+  const CenteredContent({super.key, required this.child, this.maxWidth = 600});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: child,
+      ),
+    );
+  }
+}
+
+/*
+ * Affiche un prix avec des espaces entre les milliers : 25000 -> "25 000 FCFA".
+ */
+String formatPrice(int price) {
+  final digits = price.toString();
+  final buffer = StringBuffer();
+  for (var i = 0; i < digits.length; i++) {
+    // On ajoute un espace avant chaque groupe de 3 chiffres (sauf au début).
+    final remaining = digits.length - i;
+    if (i > 0 && remaining % 3 == 0) buffer.write(' ');
+    buffer.write(digits[i]);
+  }
+  return '$buffer FCFA';
 }
