@@ -7,9 +7,11 @@ Beaucoup de commerçants des marchés vendent tous les jours sans être présent
 ## Fonctionnalités
 
 - **Connexion** par email et mot de passe, ou avec un compte Google (OAuth 2.0 / OpenID Connect via Firebase Authentication).
-- **Création de la boutique à la voix** : la phrase du commerçant est transformée en texte (reconnaissance vocale), puis l'IA en extrait le nom, la catégorie, la ville et le pays.
+- **Marketplace** : à l'accueil, les produits de toutes les boutiques, une recherche, une barre de catégories et les boutiques à découvrir. Chaque produit a sa fiche, et l'on peut le mettre en **favori**.
+- **Commandes** : l'acheteur commande un produit (quantité, téléphone, message) et suit sa commande. Le vendeur reçoit les commandes, les accepte ou les refuse, puis les marque livrées : le stock baisse automatiquement. Le paiement Mobile Money n'est pas encore intégré, le vendeur contacte l'acheteur.
+- **Création de la boutique guidée par Sengue** : trois questions (que vends-tu, le nom, le lieu). On répond à la voix, par écrit, ou avec une simple photo d'un article que l'IA reconnaît. Après chaque réponse dite à voix haute, Sengue répète ce qu'elle a compris et l'on confirme par Oui ou Non. Un formulaire classique reste disponible.
 - **Ajout de produit par photo** : l'IA (Gemini, vision) reconnaît le produit, choisit sa catégorie et propose un nom et une description.
-- **Gestion des produits** : liste, prix, stock avec alertes (stock faible, rupture), suppression.
+- **Gestion de sa boutique** (bouton Vendre) : liste des produits, prix, stock avec alertes (stock faible, rupture), suppression.
 - **Sengue, assistante business** : conseils sur les prix, les ventes et WhatsApp, adaptés aux produits de la boutique. Questions à l'écrit ou à la voix, réponses lues à voix haute.
 - **Offre Pro** : écran de présentation, paiement Mobile Money à venir.
 - **Français et anglais**.
@@ -24,7 +26,7 @@ Application Flutter (Android et web)
                                           |  vérifie le jeton JWT
                                           |  vérifie les données
                                           |  appelle Gemini avec la clé secrète
-                                          ->  Google Gemini 2.5 Flash
+                                          ->  Google Gemini (modèle réglable)
 ```
 
 **Pourquoi passer par une API ?** Une clé placée dans une application peut être récupérée par n'importe qui. Ici, la clé Gemini reste sur le serveur. L'API accepte seulement les utilisateurs connectés : elle vérifie la signature du jeton Firebase (JWT) avec les clés publiques de Google. Les instructions données à l'IA sont écrites sur le serveur, et les réponses sont vérifiées avant d'être renvoyées (par exemple, une catégorie inventée par l'IA est remplacée par « Autre »).
@@ -37,7 +39,7 @@ Application Flutter (Android et web)
 | Connexion | Firebase Authentication (email, Google OAuth 2.0), jetons JWT |
 | Base de données | Cloud Firestore, règles de sécurité |
 | API | Node.js, Netlify Functions, bibliothèque jose (vérification JWT) |
-| IA | Google Gemini 2.5 Flash (texte et image, réponses JSON) |
+| IA | Google Gemini Flash-Lite, avec modèle de secours (texte et image, réponses JSON) |
 | Voix | speech_to_text, flutter_tts |
 | Tests | flutter_test, node:test |
 | CI/CD | Git, GitHub Actions, déploiement automatique sur Netlify |
@@ -49,14 +51,23 @@ lib/
   main.dart                    démarrage, choix de l'écran selon la connexion
   strings.dart                 textes en français et en anglais
   theme.dart                   couleurs et style
-  data/categories.dart         liste des catégories
-  models/                      boutique, produit, réponses de l'IA
+  data/                        catégories, nettoyage du texte dicté
+  models/                      boutique, produit, commande, réponses de l'IA
   services/
     auth_service.dart          connexion (email, Google)
     database_service.dart      lecture et écriture dans Firestore
     ai_service.dart            appels à l'API /api/ai
     voice_service.dart         reconnaissance et synthèse vocale
-  screens/                     les écrans de l'application
+    photo_service.dart         choix d'une photo (ordinateur ou téléphone)
+  screens/
+    main_screen.dart           barre du bas : Accueil, Favoris, Vendre, Commandes, Profil
+    home_screen.dart           accueil de la marketplace
+    product_detail_screen.dart fiche produit et commande
+    orders_screen.dart         achats et commandes reçues
+    create_shop_screen.dart    création de boutique guidée par Sengue
+    shop_screen.dart           gestion de sa boutique
+    assistant_screen.dart      discussion avec Sengue
+  widgets/                     éléments réutilisés (carte produit, logo Google)
 netlify/
   functions/ai.mjs             point d'entrée de l'API
   lib/auth.mjs                 vérification du jeton Firebase

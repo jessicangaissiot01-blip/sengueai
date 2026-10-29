@@ -4,7 +4,10 @@ rules_version = '2';
 // Par défaut tout est interdit. On autorise seulement :
 //  - chaque utilisateur à lire et modifier son propre profil ;
 //  - tout le monde à lire les boutiques et les produits ;
-//  - seul le propriétaire à créer, modifier ou supprimer sa boutique et ses produits.
+//  - seul le propriétaire à créer, modifier ou supprimer sa boutique et ses produits ;
+//  - un utilisateur connecté à passer une commande en son nom ;
+//  - seuls l'acheteur et le vendeur à lire une commande ;
+//  - seul le vendeur à changer le statut d'une commande.
 // Déploiement : firebase deploy --only firestore:rules
 
 service cloud.firestore {
@@ -30,6 +33,19 @@ service cloud.firestore {
                     && request.resource.data.price is int
                     && request.resource.data.price > 0;
       allow update, delete: if isOwner(resource.data.ownerId);
+    }
+
+    match /orders/{orderId} {
+      // L'acheteur crée la commande pour lui-même, avec une quantité valide,
+      // et elle commence toujours "en attente".
+      allow create: if isOwner(request.resource.data.buyerId)
+                    && request.resource.data.quantity is int
+                    && request.resource.data.quantity > 0
+                    && request.resource.data.status == 'pending';
+      allow read: if isOwner(resource.data.buyerId) || isOwner(resource.data.sellerId);
+      // Le vendeur peut seulement changer le champ status.
+      allow update: if isOwner(resource.data.sellerId)
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
     }
   }
 }
