@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../strings.dart';
 import '../theme.dart';
+import '../widgets/google_logo.dart';
 
 /*
  * Écran de connexion et d'inscription.
@@ -150,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: _loading ? null : () => _run(_auth.loginWithGoogle),
-                  icon: const Icon(Icons.account_circle),
+                  icon: const GoogleLogo(),
                   label: Text(tr('google')),
                 ),
               ],
