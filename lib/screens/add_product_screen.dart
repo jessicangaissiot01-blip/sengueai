@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../data/categories.dart';
 import '../models/ai_results.dart';
@@ -10,13 +9,14 @@ import '../models/product.dart';
 import '../models/shop.dart';
 import '../services/ai_service.dart';
 import '../services/database_service.dart';
+import '../services/photo_service.dart';
 import '../strings.dart';
 import '../theme.dart';
 
 /*
  * Ajout d'un produit.
  *
- * 1. Le commerçant prend une photo (ou en choisit une dans la galerie).
+ * 1. Le commerçant prend une photo (téléphone) ou en choisit une (ordinateur).
  * 2. La photo est envoyée à l'IA, qui propose un nom, une catégorie et
  *    une description. Le commerçant peut tout modifier.
  * 3. Il indique le prix et le stock, puis enregistre.
@@ -32,7 +32,7 @@ class AddProductScreen extends StatefulWidget {
 class _AddProductScreenState extends State<AddProductScreen> {
   final _ai = AiService();
   final _database = DatabaseService();
-  final _picker = ImagePicker();
+  final _photos = PhotoService();
 
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
@@ -57,21 +57,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }
 
   /*
-   * Ouvre l'appareil photo ou la galerie.
-   * On réduit la photo dès ici (600 pixels, qualité 70 %) : elle est plus
-   * rapide à envoyer à l'IA et assez légère pour être enregistrée dans Firestore.
-   * On lit la photo en octets (readAsBytes) : cela marche sur Android et sur le web.
+   * Choix de la photo (voir PhotoService), puis analyse par l'IA.
    */
-  Future<void> _pickPhoto(ImageSource source) async {
-    final file = await _picker.pickImage(
-      source: source,
-      maxWidth: 600,
-      maxHeight: 600,
-      imageQuality: 70,
-    );
-    if (file == null) return;
-
-    final bytes = await file.readAsBytes();
+  Future<void> _pickPhoto() async {
+    final bytes = await _photos.pickPhoto(context);
+    if (bytes == null || !mounted) return;
     setState(() {
       _photo = bytes;
       _guess = null;
@@ -137,35 +127,23 @@ class _AddProductScreenState extends State<AddProductScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(tr('addProduct'))),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          _buildPhotoArea(),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _recognizing ? null : () => _pickPhoto(ImageSource.camera),
-                  icon: const Icon(Icons.photo_camera),
-                  label: Text(tr('takePhoto')),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _recognizing ? null : () => _pickPhoto(ImageSource.gallery),
-                  icon: const Icon(Icons.photo_library),
-                  label: Text(tr('gallery')),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildAiResult(),
-          const SizedBox(height: 12),
-          _buildForm(),
-        ],
+      body: CenteredContent(
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            _buildPhotoArea(),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _recognizing ? null : _pickPhoto,
+              icon: const Icon(Icons.add_a_photo),
+              label: Text(photoButtonLabel()),
+            ),
+            const SizedBox(height: 12),
+            _buildAiResult(),
+            const SizedBox(height: 12),
+            _buildForm(),
+          ],
+        ),
       ),
     );
   }
