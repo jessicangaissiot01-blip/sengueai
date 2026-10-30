@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import '../data/categories.dart';
 import '../models/product.dart';
-import '../models/shop.dart';
 import '../strings.dart';
 import '../theme.dart';
 import '../widgets/product_card.dart';
@@ -11,41 +10,41 @@ import '../widgets/product_card.dart';
 /*
  * Accueil de la marketplace.
  *
- *  - en haut : salutation et recherche ;
+ *  - en haut : salutation, panier et recherche ;
  *  - une bannière pour vendre avec Sengue ;
  *  - la barre des catégories ;
- *  - les boutiques à découvrir ;
- *  - les produits récents de toutes les boutiques.
+ *  - les produits récents de toutes les boutiques, avec le nom de la
+ *    boutique qui les vend et un cœur pour les favoris.
  *
  * Les données viennent de MainScreen. Cet écran ne fait que les afficher
  * et filtrer selon la recherche et la catégorie choisie.
  */
 class HomeScreen extends StatefulWidget {
   final User user;
-  final List<Shop> shops;
   final List<Product> products;
   final bool productsLoaded;
   final Set<String> favorites;
   final bool hasShop;
-  final String Function(Product product) placeOf;
+  final int cartCount;
+  final String Function(Product product) shopLabelOf;
   final void Function(Product product) onOpenProduct;
-  final void Function(Shop shop) onOpenShop;
   final void Function(Product product) onToggleFavorite;
-  final VoidCallback onOpenSell;
+  final VoidCallback onOpenMyShop;
+  final VoidCallback onOpenCart;
 
   const HomeScreen({
     super.key,
     required this.user,
-    required this.shops,
     required this.products,
     required this.productsLoaded,
     required this.favorites,
     required this.hasShop,
-    required this.placeOf,
+    required this.cartCount,
+    required this.shopLabelOf,
     required this.onOpenProduct,
-    required this.onOpenShop,
     required this.onToggleFavorite,
-    required this.onOpenSell,
+    required this.onOpenMyShop,
+    required this.onOpenCart,
   });
 
   @override
@@ -79,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
         product.name,
         product.description,
         categoryById(product.categoryId).label(_language),
-        widget.placeOf(product),
+        widget.shopLabelOf(product),
       ].join(' ').toLowerCase();
       return text.contains(search);
     }).toList();
@@ -93,10 +92,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _buildHeader(),
         _buildBanner(),
         _buildCategories(),
-        if (!_isFiltering && widget.shops.isNotEmpty) ...[
-          _sectionTitle(tr('discoverShops')),
-          _buildShops(),
-        ],
         _sectionTitle(_isFiltering ? tr('results') : tr('recentProducts')),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -106,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Bandeau vert du haut : salutation, langue et recherche.
+  // Bandeau vert du haut : salutation, langue, panier et recherche.
   Widget _buildHeader() {
     final hello = _firstName.isEmpty ? tr('hello') : '${tr('hello')}, $_firstName';
     return Container(
@@ -131,6 +126,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const LanguageButton(),
+              // Icône du panier, avec le nombre d'articles dans un petit rond.
+              IconButton(
+                tooltip: tr('cart'),
+                onPressed: widget.onOpenCart,
+                icon: Badge(
+                  isLabelVisible: widget.cartCount > 0,
+                  label: Text('${widget.cartCount}'),
+                  child: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -178,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       backgroundColor: Colors.white,
                       foregroundColor: AppColors.navy,
                     ),
-                    onPressed: widget.onOpenSell,
+                    onPressed: widget.onOpenMyShop,
                     child: Text(widget.hasShop ? tr('manageShop') : tr('startSelling')),
                   ),
                 ],
@@ -248,62 +253,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Liste horizontale des boutiques.
-  Widget _buildShops() {
-    return SizedBox(
-      height: 120,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: widget.shops.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final shop = widget.shops[index];
-          final isMine = shop.ownerId == widget.user.uid;
-          // La première lettre du nom sert de logo.
-          final letter = shop.name.isEmpty ? '?' : shop.name[0].toUpperCase();
-          return SizedBox(
-            width: 120,
-            child: Card(
-              margin: EdgeInsets.zero,
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: () => widget.onOpenShop(shop),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircleAvatar(
-                        radius: 24,
-                        backgroundColor: isMine ? AppColors.gold : AppColors.green,
-                        foregroundColor: isMine ? AppColors.navy : Colors.white,
-                        child: Text(letter, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        isMine ? tr('yourShop') : shop.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        shop.city,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12, color: Colors.black54),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   Widget _buildProducts() {
     if (!widget.productsLoaded) {
       return const Center(child: CircularProgressIndicator());
@@ -318,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final product = products[index];
         return ProductCard(
           product: product,
-          place: widget.placeOf(product),
+          shopLabel: widget.shopLabelOf(product),
           isFavorite: widget.favorites.contains(product.id),
           onTap: () => widget.onOpenProduct(product),
           onFavorite: () => widget.onToggleFavorite(product),

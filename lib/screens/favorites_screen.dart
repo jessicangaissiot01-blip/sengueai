@@ -10,14 +10,14 @@ import '../widgets/product_card.dart';
  */
 class FavoritesScreen extends StatelessWidget {
   final List<Product> products;
-  final String Function(Product product) placeOf;
+  final String Function(Product product) shopLabelOf;
   final void Function(Product product) onOpenProduct;
   final void Function(Product product) onToggleFavorite;
 
   const FavoritesScreen({
     super.key,
     required this.products,
-    required this.placeOf,
+    required this.shopLabelOf,
     required this.onOpenProduct,
     required this.onToggleFavorite,
   });
@@ -42,7 +42,7 @@ class FavoritesScreen extends StatelessWidget {
                     final product = products[index];
                     return ProductCard(
                       product: product,
-                      place: placeOf(product),
+                      shopLabel: shopLabelOf(product),
                       isFavorite: true,
                       onTap: () => onOpenProduct(product),
                       onFavorite: () => onToggleFavorite(product),

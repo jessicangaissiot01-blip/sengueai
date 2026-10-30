@@ -7,8 +7,9 @@ Beaucoup de commerçants des marchés vendent tous les jours sans être présent
 ## Fonctionnalités
 
 - **Connexion** par email et mot de passe, ou avec un compte Google (OAuth 2.0 / OpenID Connect via Firebase Authentication).
-- **Marketplace** : à l'accueil, les produits de toutes les boutiques, une recherche, une barre de catégories et les boutiques à découvrir. Chaque produit a sa fiche, et l'on peut le mettre en **favori**.
-- **Commandes** : l'acheteur commande un produit (quantité, téléphone, message) et suit sa commande. Le vendeur reçoit les commandes, les accepte ou les refuse, puis les marque livrées : le stock baisse automatiquement. Le paiement Mobile Money n'est pas encore intégré, le vendeur contacte l'acheteur.
+- **Marketplace** : à l'accueil, les produits de toutes les boutiques (avec le nom de la boutique qui les vend), une recherche et une barre de catégories. Chaque produit a sa fiche avec ses photos, et l'on peut le mettre en **favori** (le cœur).
+- **Panier et commandes** : l'acheteur ajoute des produits au panier, ou achète directement, puis laisse son numéro. Chaque vendeur reçoit la commande, l'accepte ou la refuse, puis la marque livrée : le stock baisse automatiquement. Le paiement Mobile Money n'est pas encore intégré, le vendeur contacte l'acheteur.
+- **Vendre** : le bouton du milieu ouvre directement le formulaire pour poster un produit (jusqu'à 4 photos, nom, catégorie, prix, stock, description).
 - **Création de la boutique guidée par Sengue** : trois questions (que vends-tu, le nom, le lieu). On répond à la voix, par écrit, ou avec une simple photo d'un article que l'IA reconnaît. Après chaque réponse dite à voix haute, Sengue répète ce qu'elle a compris et l'on confirme par Oui ou Non. Un formulaire classique reste disponible.
 - **Ajout de produit par photo** : l'IA (Gemini, vision) reconnaît le produit, choisit sa catégorie et propose un nom et une description.
 - **Gestion de sa boutique** (bouton Vendre) : liste des produits, prix, stock avec alertes (stock faible, rupture), suppression.
@@ -62,7 +63,8 @@ lib/
   screens/
     main_screen.dart           barre du bas : Accueil, Favoris, Vendre, Commandes, Profil
     home_screen.dart           accueil de la marketplace
-    product_detail_screen.dart fiche produit et commande
+    product_detail_screen.dart fiche produit, favori, panier
+    cart_screen.dart           panier
     orders_screen.dart         achats et commandes reçues
     create_shop_screen.dart    création de boutique guidée par Sengue
     shop_screen.dart           gestion de sa boutique

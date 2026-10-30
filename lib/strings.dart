@@ -89,7 +89,6 @@ const Map<String, String> _french = {
   'shopNameRequired': 'Donne un nom à ta boutique.',
 
   'manageShop': 'Gérer ma boutique',
-  'yourShop': 'Ta boutique',
   'shopProducts': 'Produits',
   'shopNoProducts': 'Cette boutique n\'a pas encore de produit.',
 
@@ -158,7 +157,6 @@ const Map<String, String> _french = {
   'bannerText': 'Crée ta boutique en quelques secondes, Sengue reconnaît tes produits en photo.',
   'startSelling': 'Commencer à vendre',
   'all': 'Toutes',
-  'discoverShops': 'Boutiques à découvrir',
   'recentProducts': 'Produits récents',
   'results': 'Résultats',
   'noResults': 'Aucun produit ne correspond.',
@@ -166,8 +164,6 @@ const Map<String, String> _french = {
   'noFavorites': 'Tu n\'as pas encore de favoris. Appuie sur le cœur d\'un produit pour le garder ici.',
   'inStock': 'En stock',
   'order': 'Commander',
-  'orderTitle': 'Commander ce produit',
-  'quantity': 'Quantité',
   'total': 'Total',
   'yourPhone': 'Ton numéro de téléphone',
   'orderNote': 'Message au vendeur (facultatif)',
@@ -195,6 +191,19 @@ const Map<String, String> _french = {
   'phoneCopied': 'Numéro copié.',
   'language': 'Langue',
   'noName': 'Sans nom',
+
+  // Panier et photos
+  'addAnotherPhoto': 'Ajouter une autre photo (4 au maximum)',
+  'cart': 'Panier',
+  'emptyCart': 'Ton panier est vide. Ajoute des produits depuis l\'accueil.',
+  'orderCart': 'Commander le panier',
+  'orderExplanation': 'Chaque vendeur reçoit ta commande et t\'appelle pour la livraison et le paiement.',
+  'productUnavailable': 'Ce produit n\'est plus disponible.',
+  'addToCart': 'Ajouter au panier',
+  'addedToCart': 'Ajouté au panier.',
+  'buyNow': 'Acheter maintenant',
+  'addedToFavorites': 'Ajouté aux favoris.',
+  'removedFromFavorites': 'Retiré des favoris.',
 
   // Erreurs générales
   'errorNetwork': 'Pas de connexion internet.',
@@ -250,7 +259,6 @@ const Map<String, String> _english = {
   'shopNameRequired': 'Give your shop a name.',
 
   'manageShop': 'Manage my shop',
-  'yourShop': 'Your shop',
   'shopProducts': 'Products',
   'shopNoProducts': 'This shop has no products yet.',
 
@@ -314,7 +322,6 @@ const Map<String, String> _english = {
   'bannerText': 'Create your shop in seconds, Sengue recognises your products from a photo.',
   'startSelling': 'Start selling',
   'all': 'All',
-  'discoverShops': 'Shops to discover',
   'recentProducts': 'Recent products',
   'results': 'Results',
   'noResults': 'No product matches.',
@@ -322,8 +329,6 @@ const Map<String, String> _english = {
   'noFavorites': 'No favourites yet. Tap the heart on a product to keep it here.',
   'inStock': 'In stock',
   'order': 'Order',
-  'orderTitle': 'Order this product',
-  'quantity': 'Quantity',
   'total': 'Total',
   'yourPhone': 'Your phone number',
   'orderNote': 'Message to the seller (optional)',
@@ -351,6 +356,18 @@ const Map<String, String> _english = {
   'phoneCopied': 'Number copied.',
   'language': 'Language',
   'noName': 'No name',
+
+  'addAnotherPhoto': 'Add another photo (4 maximum)',
+  'cart': 'Cart',
+  'emptyCart': 'Your cart is empty. Add products from the home page.',
+  'orderCart': 'Order the cart',
+  'orderExplanation': 'Each seller receives your order and calls you for delivery and payment.',
+  'productUnavailable': 'This product is no longer available.',
+  'addToCart': 'Add to cart',
+  'addedToCart': 'Added to cart.',
+  'buyNow': 'Buy now',
+  'addedToFavorites': 'Added to favourites.',
+  'removedFromFavorites': 'Removed from favourites.',
 
   'errorNetwork': 'No internet connection.',
   'errorAi': 'Sengue is not available right now. Please try again.',

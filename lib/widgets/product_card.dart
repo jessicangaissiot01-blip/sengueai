@@ -5,14 +5,15 @@ import '../strings.dart';
 import '../theme.dart';
 
 /*
- * Carte d'un produit dans une grille : photo, nom, prix et ville.
+ * Carte d'un produit dans une grille : photo, nom, prix, et la boutique
+ * qui le vend (nom et ville).
  * Utilisée sur l'accueil, dans les favoris et dans la vitrine d'une boutique.
  *
  * Le cœur en haut à droite ajoute ou retire le produit des favoris.
  */
 class ProductCard extends StatelessWidget {
   final Product product;
-  final String place;
+  final String shopLabel;
   final bool isFavorite;
   final VoidCallback onTap;
   final VoidCallback? onFavorite;
@@ -20,7 +21,7 @@ class ProductCard extends StatelessWidget {
   const ProductCard({
     super.key,
     required this.product,
-    required this.place,
+    required this.shopLabel,
     required this.isFavorite,
     required this.onTap,
     this.onFavorite,
@@ -97,15 +98,15 @@ class ProductCard extends StatelessWidget {
                     formatPrice(product.price),
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  if (place.isNotEmpty) ...[
+                  if (shopLabel.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.location_on_outlined, size: 14, color: Colors.black54),
+                        const Icon(Icons.storefront, size: 14, color: Colors.black54),
                         const SizedBox(width: 2),
                         Expanded(
                           child: Text(
-                            place,
+                            shopLabel,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(color: Colors.black54, fontSize: 12),

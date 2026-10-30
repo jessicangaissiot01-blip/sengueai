@@ -8,6 +8,8 @@ import '../models/shop.dart';
 import '../services/database_service.dart';
 import '../strings.dart';
 import '../theme.dart';
+import 'add_product_screen.dart';
+import 'cart_screen.dart';
 import 'create_shop_screen.dart';
 import 'favorites_screen.dart';
 import 'home_screen.dart';
@@ -53,6 +55,7 @@ class _MainScreenState extends State<MainScreen> {
   List<Product> _products = [];
   bool _productsLoaded = false;
   Set<String> _favorites = {};
+  Map<String, int> _cart = {}; // panier : identifiant du produit -> quantité
 
   String get _uid => widget.user.uid;
 
@@ -85,6 +88,9 @@ class _MainScreenState extends State<MainScreen> {
     _subscriptions.add(_database.watchFavorites(_uid).listen((favorites) {
       setState(() => _favorites = favorites);
     }));
+    _subscriptions.add(_database.watchCart(_uid).listen((cart) {
+      setState(() => _cart = cart);
+    }));
   }
 
   @override
@@ -100,10 +106,22 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   /*
-   * Bouton "Vendre" : crée la boutique si l'utilisateur n'en a pas,
-   * sinon ouvre la gestion de sa boutique.
+   * Bouton "Vendre" : ouvre directement le formulaire pour poster un
+   * produit (photos, nom, prix, description...). Si l'utilisateur n'a pas
+   * encore de boutique, on lui fait d'abord créer sa boutique.
    */
   void _openSell() {
+    if (!_myShopLoaded) return;
+    final shop = _myShop;
+    if (shop == null) {
+      _open(CreateShopScreen(user: widget.user));
+    } else {
+      _open(AddProductScreen(shop: shop));
+    }
+  }
+
+  // Gestion de sa boutique (liste de ses produits, stock, Sengue).
+  void _openMyShop() {
     if (!_myShopLoaded) return;
     final shop = _myShop;
     if (shop == null) {
@@ -113,12 +131,18 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
+  void _openCart() {
+    _open(CartScreen(user: widget.user, products: _products, shops: _shops));
+  }
+
   void _openProduct(Product product) {
     _open(ProductDetailScreen(
       product: product,
       shop: _shops[product.shopId],
       user: widget.user,
       isFavorite: _favorites.contains(product.id),
+      onOpenCart: _openCart,
+      onOpenShop: _openShop,
     ));
   }
 
@@ -135,39 +159,46 @@ class _MainScreenState extends State<MainScreen> {
     _database.setFavorite(_uid, product.id, !isFavorite);
   }
 
-  // Ville et pays de la boutique d'un produit, pour l'afficher sur sa carte.
-  String _placeOf(Product product) {
+  /*
+   * Nom et ville de la boutique d'un produit, affichés sur sa carte.
+   * Exemple : "Aliya Shop · Niamey".
+   */
+  String _shopLabelOf(Product product) {
     final shop = _shops[product.shopId];
     if (shop == null) return '';
-    return shop.city.isNotEmpty ? shop.city : shop.country;
+    final place = shop.city.isNotEmpty ? shop.city : shop.country;
+    return place.isEmpty ? shop.name : '${shop.name} · $place';
   }
+
+  // Nombre total d'articles dans le panier, affiché sur l'icône du panier.
+  int get _cartCount => _cart.values.fold(0, (sum, quantity) => sum + quantity);
 
   Widget _buildTab() {
     switch (_tab) {
       case _tabFavorites:
         return FavoritesScreen(
           products: _products.where((p) => _favorites.contains(p.id)).toList(),
-          placeOf: _placeOf,
+          shopLabelOf: _shopLabelOf,
           onOpenProduct: _openProduct,
           onToggleFavorite: _toggleFavorite,
         );
       case _tabOrders:
         return OrdersScreen(user: widget.user, hasShop: _myShop != null);
       case _tabProfile:
-        return ProfileScreen(user: widget.user, myShop: _myShop, onOpenSell: _openSell);
+        return ProfileScreen(user: widget.user, myShop: _myShop, onOpenMyShop: _openMyShop);
       default:
         return HomeScreen(
           user: widget.user,
-          shops: _shops.values.toList(),
           products: _products,
           productsLoaded: _productsLoaded,
           favorites: _favorites,
           hasShop: _myShop != null,
-          placeOf: _placeOf,
+          cartCount: _cartCount,
+          shopLabelOf: _shopLabelOf,
           onOpenProduct: _openProduct,
-          onOpenShop: _openShop,
           onToggleFavorite: _toggleFavorite,
-          onOpenSell: _openSell,
+          onOpenMyShop: _openMyShop,
+          onOpenCart: _openCart,
         );
     }
   }

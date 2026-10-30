@@ -14,13 +14,13 @@ import 'pro_screen.dart';
 class ProfileScreen extends StatelessWidget {
   final User user;
   final Shop? myShop;
-  final VoidCallback onOpenSell;
+  final VoidCallback onOpenMyShop;
 
   const ProfileScreen({
     super.key,
     required this.user,
     required this.myShop,
-    required this.onOpenSell,
+    required this.onOpenMyShop,
   });
 
   @override
@@ -54,7 +54,7 @@ class ProfileScreen extends StatelessWidget {
                     title: Text(shop == null ? tr('createShop') : tr('manageShop')),
                     subtitle: shop == null ? null : Text(shop.name),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: onOpenSell,
+                    onTap: onOpenMyShop,
                   ),
                   const Divider(height: 1),
                   ListTile(

@@ -67,7 +67,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                   final product = products[index];
                   return ProductCard(
                     product: product,
-                    place: shop.city,
+                    shopLabel: shop.city,
                     isFavorite: false,
                     onTap: () => widget.onOpenProduct(product),
                   );
