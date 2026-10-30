@@ -14,6 +14,7 @@ import '../models/shop.dart';
  *               boutique ils appartiennent
  *  - orders   : les commandes (acheteur, vendeur, produit, quantité, statut)
  *  - users    : le profil de chaque utilisateur, avec ses produits favoris
+ *               et son panier
  *
  * Les méthodes "watch" renvoient un Stream : l'écran est mis à jour
  * automatiquement à chaque changement dans la base, sans recharger.
@@ -115,6 +116,49 @@ class DatabaseService {
           ? FieldValue.arrayUnion([productId])
           : FieldValue.arrayRemove([productId]),
     }, SetOptions(merge: true));
+  }
+
+  /*
+   * Panier : gardé dans le document de l'utilisateur, champ cart, sous la
+   * forme { identifiant du produit : quantité }. Il est donc retrouvé sur
+   * un autre appareil ou après avoir fermé l'application.
+   */
+  Stream<Map<String, int>> watchCart(String uid) {
+    return _users.doc(uid).snapshots().map((doc) {
+      final cart = doc.data()?['cart'] as Map<String, dynamic>? ?? {};
+      return {
+        for (final entry in cart.entries)
+          if (entry.value is num) entry.key: (entry.value as num).toInt(),
+      };
+    });
+  }
+
+  // Ajoute une unité d'un produit au panier (increment évite de relire le panier).
+  Future<void> addToCart(String uid, String productId) {
+    return _users.doc(uid).set({
+      'cart': {productId: FieldValue.increment(1)},
+    }, SetOptions(merge: true));
+  }
+
+  // Met la quantité d'un produit dans le panier. 0 retire le produit.
+  Future<void> setCartQuantity(String uid, String productId, int quantity) {
+    return _users.doc(uid).set({
+      'cart': {productId: quantity > 0 ? quantity : FieldValue.delete()},
+    }, SetOptions(merge: true));
+  }
+
+  /*
+   * Commande tout le panier d'un coup : une commande par produit (chaque
+   * produit peut venir d'une boutique différente), puis on vide le panier.
+   * Le batch enregistre tout ensemble.
+   */
+  Future<void> createOrders(String uid, List<ShopOrder> orders) {
+    final batch = _db.batch();
+    for (final order in orders) {
+      batch.set(_orders.doc(), order.toMap());
+    }
+    batch.set(_users.doc(uid), {'cart': <String, int>{}}, SetOptions(mergeFields: ['cart']));
+    return batch.commit();
   }
 
   Future<void> createOrder(ShopOrder order) {
