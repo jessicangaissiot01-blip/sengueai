@@ -32,6 +32,12 @@ Application Flutter (Android et web)
 
 **Pourquoi passer par une API ?** Une clé placée dans une application peut être récupérée par n'importe qui. Ici, la clé Gemini reste sur le serveur. L'API accepte seulement les utilisateurs connectés : elle vérifie la signature du jeton Firebase (JWT) avec les clés publiques de Google. Les instructions données à l'IA sont écrites sur le serveur, et les réponses sont vérifiées avant d'être renvoyées (par exemple, une catégorie inventée par l'IA est remplacée par « Autre »).
 
+## Choix techniques
+
+- **Photos des produits** : elles sont réduites (600 pixels, qualité 70 %), puis enregistrées en base64 directement dans Firestore, avec un contrôle de taille (un document ne peut pas dépasser 1 Mo). Cela évite Firebase Storage, qui demande un forfait payant. Pour une mise en production à grande échelle, les photos iraient dans un service de fichiers (Firebase Storage ou Cloudinary), et Firestore ne garderait que leur lien.
+- **Clé Gemini** : elle n'est jamais dans l'application. L'API Netlify la garde côté serveur et vérifie le jeton Firebase (JWT) de chaque utilisateur avant d'appeler Gemini.
+- **Modèle de secours** : si le modèle Gemini principal est surchargé ou renvoie une réponse vide, l'API essaie automatiquement un second modèle.
+
 ## Technologies
 
 | Partie | Technologies |
