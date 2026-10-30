@@ -16,8 +16,8 @@ import '../theme.dart';
 /*
  * Ajout d'un produit.
  *
- * 1. Le commerçant prend une photo (téléphone) ou en choisit une (ordinateur).
- * 2. La photo est envoyée à l'IA, qui propose un nom, une catégorie et
+ * 1. Le commerçant ajoute 1 à 4 photos du produit.
+ * 2. La première photo est envoyée à l'IA, qui propose un nom, une catégorie et
  *    une description. Le commerçant peut tout modifier.
  * 3. Il indique le prix et le stock, puis enregistre.
  */
@@ -40,7 +40,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _descriptionController = TextEditingController();
   late String _categoryId = widget.shop.categoryId;
 
-  Uint8List? _photo;
+  // Les photos choisies, la première est la photo principale.
+  final List<Uint8List> _pickedPhotos = [];
   ProductGuess? _guess;
   bool _recognizing = false;
   bool _saving = false;
@@ -57,16 +58,23 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }
 
   /*
-   * Choix de la photo (voir PhotoService), puis analyse par l'IA.
+   * Ajoute une photo (voir PhotoService), jusqu'à 4.
+   * Seule la première photo est envoyée à l'IA pour reconnaître le produit.
    */
   Future<void> _pickPhoto() async {
+    if (_pickedPhotos.length >= Product.maxPhotos) return;
     final bytes = await _photos.pickPhoto(context);
     if (bytes == null || !mounted) return;
+    final isFirst = _pickedPhotos.isEmpty;
+    setState(() => _pickedPhotos.add(bytes));
+    if (isFirst) await _recognize(bytes);
+  }
+
+  void _removePhoto(int index) {
     setState(() {
-      _photo = bytes;
-      _guess = null;
+      _pickedPhotos.removeAt(index);
+      if (_pickedPhotos.isEmpty) _guess = null;
     });
-    await _recognize(bytes);
   }
 
   Future<void> _recognize(Uint8List photo) async {
@@ -92,13 +100,15 @@ class _AddProductScreenState extends State<AddProductScreen> {
     final price = int.tryParse(_priceController.text) ?? 0;
     final stock = int.tryParse(_stockController.text) ?? 0;
 
-    if (_photo == null || name.isEmpty || price <= 0) {
+    if (_pickedPhotos.isEmpty || name.isEmpty || price <= 0) {
       showMessage(context, tr('productRequired'));
       return;
     }
 
-    final imageBase64 = base64Encode(_photo!);
-    if (imageBase64.length > Product.maxImageLength) {
+    // Toutes les photos ensemble doivent rester sous la limite de taille.
+    final images = _pickedPhotos.map(base64Encode).toList();
+    final totalLength = images.fold<int>(0, (sum, image) => sum + image.length);
+    if (totalLength > Product.maxImageLength) {
       showMessage(context, tr('imageTooBig'));
       return;
     }
@@ -112,7 +122,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
         description: _descriptionController.text.trim(),
         price: price,
         stock: stock,
-        imageBase64: imageBase64,
+        imageBase64: images.first,
+        extraImages: images.skip(1).toList(),
       ));
       if (mounted) Navigator.pop(context);
     } catch (_) {
@@ -133,11 +144,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
           children: [
             _buildPhotoArea(),
             const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _recognizing ? null : _pickPhoto,
-              icon: const Icon(Icons.add_a_photo),
-              label: Text(photoButtonLabel()),
-            ),
+            if (_pickedPhotos.length < Product.maxPhotos)
+              OutlinedButton.icon(
+                onPressed: _recognizing ? null : _pickPhoto,
+                icon: const Icon(Icons.add_a_photo),
+                label: Text(_pickedPhotos.isEmpty ? photoButtonLabel() : tr('addAnotherPhoto')),
+              ),
             const SizedBox(height: 12),
             _buildAiResult(),
             const SizedBox(height: 12),
@@ -148,22 +160,68 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 
+  /*
+   * Zone des photos : la photo principale en grand, puis les autres en petit.
+   * Chaque photo a une croix pour la retirer.
+   */
   Widget _buildPhotoArea() {
-    return Container(
-      height: 220,
-      decoration: BoxDecoration(
-        color: AppColors.lightGreen,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: _photo == null
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(tr('photoHint'), textAlign: TextAlign.center),
-              ),
-            )
-          : Image.memory(_photo!, fit: BoxFit.cover),
+    if (_pickedPhotos.isEmpty) {
+      return Container(
+        height: 220,
+        decoration: BoxDecoration(
+          color: AppColors.lightGreen,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(tr('photoHint'), textAlign: TextAlign.center),
+          ),
+        ),
+      );
+    }
+    return Column(
+      children: [
+        _photoWithRemove(0, height: 220),
+        if (_pickedPhotos.length > 1) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              for (var i = 1; i < _pickedPhotos.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: SizedBox(width: 90, child: _photoWithRemove(i, height: 90)),
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _photoWithRemove(int index, {required double height}) {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.memory(_pickedPhotos[index], height: height, width: double.infinity, fit: BoxFit.cover),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: CircleAvatar(
+            radius: 14,
+            backgroundColor: Colors.black54,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              iconSize: 16,
+              tooltip: tr('delete'),
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => _removePhoto(index),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

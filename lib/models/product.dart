@@ -12,6 +12,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
  * Avantage : pas besoin de Firebase Storage, qui demande maintenant un
  * forfait payant. Limite : un document Firestore ne peut pas dépasser 1 Mo,
  * c'est pourquoi on vérifie la taille avant d'enregistrer.
+ *
+ * Un produit peut avoir jusqu'à 4 photos : la photo principale (imageBase64,
+ * affichée dans les listes) et des photos en plus (extraImages, affichées
+ * seulement sur la fiche du produit).
  */
 class Product {
   final String id;
@@ -22,6 +26,7 @@ class Product {
   final int price;
   final int stock;
   final String imageBase64;
+  final List<String> extraImages;
   final DateTime? createdAt;
 
   Product({
@@ -33,11 +38,16 @@ class Product {
     required this.price,
     required this.stock,
     required this.imageBase64,
+    this.extraImages = const [],
     this.createdAt,
   });
 
-  // Taille maximale de la photo en base64 (700 Ko), pour rester sous 1 Mo.
+  // Taille maximale de toutes les photos en base64 (700 Ko), pour rester sous 1 Mo.
   static const int maxImageLength = 700 * 1024;
+  static const int maxPhotos = 4;
+
+  // Toutes les photos, la principale en premier.
+  List<String> get allImages => [if (imageBase64.isNotEmpty) imageBase64, ...extraImages];
 
   bool get isOutOfStock => stock <= 0;
   bool get isLowStock => stock > 0 && stock <= 3;
@@ -70,6 +80,8 @@ class Product {
       price: (data['price'] as num?)?.toInt() ?? 0,
       stock: (data['stock'] as num?)?.toInt() ?? 0,
       imageBase64: data['imageBase64'] as String? ?? '',
+      // Les anciens produits n'ont pas ce champ : on met alors une liste vide.
+      extraImages: (data['extraImages'] as List<dynamic>? ?? []).whereType<String>().toList(),
       createdAt: timestamp is Timestamp ? timestamp.toDate() : null,
     );
   }
@@ -85,6 +97,7 @@ class Product {
       'price': price,
       'stock': stock,
       'imageBase64': imageBase64,
+      'extraImages': extraImages,
       'createdAt': FieldValue.serverTimestamp(),
     };
   }
